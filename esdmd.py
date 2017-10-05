@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 #
-#pip install python-daemon
-#pip install lockfile
-##pip install kafka-python
+#sudo pip install python-daemon
+#sudo pip install lockfile
+##sudo pip install kafka-python
 
 import daemon, signal
 from daemon import pidfile
