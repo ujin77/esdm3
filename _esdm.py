@@ -56,11 +56,14 @@ if __name__ == "__main__":
     # instrument.debug = True
     # print instrument.serial.baudrate
     # print instrument.read_float(0, 4)
-    for reg in regs:
-        print instrument.read_float(reg[1], 4)
+
+    # for reg in regs:
+    #     print instrument.read_float(reg[1], 4)
 
     values = [ instrument.read_float(reg[1], 4) for reg in regs ]
     print values
     outvals = list((' '.join([fmt_or_dummy(*t) for t in zip(regs, values)])).split())
     print outvals
 
+
+    # print [fmt_or_dummy(*t) for t in zip(regs, values)]

@@ -4,10 +4,14 @@
 #sudo pip install minimalmodbus
 
 import minimalmodbus
+import argparse, os, sys
+
+PROG=os.path.basename(sys.argv[0]).rstrip('.py')
+PROG_DESC='Eastron SDM230 reader'
 
 DEFAULT_CFG = {
     'portname':'/dev/ttyUSB0',
-    'baudrate':2400,
+    'baudrate':9600,
     'timeout':0.5,
     'slaveaddress':1
 }
@@ -50,6 +54,36 @@ regs = [
 ( 'Wrea:', 0x0158, '%6.2f' ), # Energy react [kvarh]
 ]
 
+regs230 = [
+# Name Reg Format Symbol
+('Line to neutral volts:',                   0x00,   '%6.2f', 'Volts'),
+('Current:',                                 0x06,   '%6.2f', 'Amps'),
+('Active power:',                            0x0c,   '%6.0f', 'Watts'),
+('Apparent power:',                          0x12,   '%6.0f', 'VoltAmps'),
+('Reactive power:',                          0x18,   '%6.0f', 'VAr'),
+('Power factor:',                            0x1e,   '%6.3f', ''),
+('Phase angle:',                             0x24,   '%6.1f', 'Degree'),
+('Frequency:',                               0x46,   '%6.2f', 'Hz'),
+('Import active energy:',                    0x48,   '%6.2f', 'kwh'),
+('Export active energy:',                    0x4a,   '%6.2f', 'kwh'),
+('Import reactive energy:',                  0x4c,   '%6.2f', 'kvarh'),
+('Export reactive energy:',                  0x4e,   '%6.2f', 'kvarh'),
+('Total system power demand:',               0x54,   '%6.2f', 'W'),
+('Maximum total system power demand:',       0x56,   '%6.2f', 'W'),
+('Current system positive power demand:',    0x58,   '%6.2f', 'W'),
+('Maximum system positive power demand:',    0x5a,   '%6.2f', 'W'),
+('Current system reverse power demand:',     0x5c,   '%6.2f', 'W'),
+('Maximum system reverse power demand:',     0x5e,   '%6.2f', 'W'),
+('Current demand:',                          0x102,  '%6.2f', 'Amps'),
+('Maximum current demand:',                  0x108,  '%6.2f', 'Amps'),
+('Total active energy:',                     0x156,  '%6.2f', 'kwh'),
+('Total reactive energy:',                   0x158,  '%6.2f', 'kvarh'),
+('Current resettable total active energy:',  0x180,  '%6.2f', 'kwh'),
+('Current resettable total reactive energy:',0x182,  '%6.2f', 'kvarh'),
+]
+
+
+
 def fmt_or_dummy(regfmt, val):
     if val is None:
         return '.'*len(regfmt[2]%(0))
@@ -57,18 +91,43 @@ def fmt_or_dummy(regfmt, val):
 
 
 if __name__ == "__main__":
-    sdm=sdm(DEFAULT_CFG)
+    parser = argparse.ArgumentParser(description=PROG_DESC)
+    parser.add_argument('-a', '--all', action='store_true', help="Display all parameters")
+    parser.add_argument('-i', '--info', default='0', help="Display parameter N" )
+    parser.add_argument('-p', '--port', default=str(DEFAULT_CFG['portname']), help='Default: ' + str(DEFAULT_CFG['portname']) )
+    parser.add_argument('-b', '--baudrate', default=str(DEFAULT_CFG['baudrate']), help='Default: ' + str(DEFAULT_CFG['baudrate']) )
+    parser.add_argument('-s', '--slaveaddress', default=str(DEFAULT_CFG['slaveaddress']), help='Default: ' + str(DEFAULT_CFG['slaveaddress']) )
+    
+    args = parser.parse_args()
+
+    DEFAULT_CFG['portname']=args.port
+    DEFAULT_CFG['baudrate']=int(args.baudrate)
+    DEFAULT_CFG['slaveaddress']=int(args.slaveaddress)
+
+    # print DEFAULT_CFG
+    if args.all:
+        sdm=sdm()
+        for reg in regs230:
+            print reg[0], reg[2]%(sdm.read_float(reg[1], 4)), reg[3]
+    elif args.info:
+        sdm=sdm()
+        reg = regs230[int(args.info)]
+        print reg[0], reg[2]%(sdm.read_float(reg[1], 4)), reg[3]
+    else:
+        parser.print_help()
+
+    # sdm=sdm()
     # instrument = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
     # instrument.serial.baudrate = 2400
     # instrument.serial.timeout = 0.5
     # instrument.debug = True
     # print instrument.serial.baudrate
     # print instrument.read_float(0, 4)
-    for reg in regs:
-        print sdm.read_float(reg[1], 4)
+    # for reg in regs:
+    #     print reg[0], sdm.read_float(reg[1], 4)
 
-    values = [ sdm.read_float(reg[1], 4) for reg in regs ]
-    print values
-    outvals = list((' '.join([fmt_or_dummy(*t) for t in zip(regs, values)])).split())
-    print outvals
+    # values = [ sdm.read_float(reg[1], 4) for reg in regs ]
+    # print values
+    # outvals = list((' '.join([fmt_or_dummy(*t) for t in zip(regs, values)])).split())
+    # print outvals
 
