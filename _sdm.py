@@ -93,7 +93,7 @@ def fmt_or_dummy(regfmt, val):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=PROG_DESC)
     parser.add_argument('-a', '--all', action='store_true', help="Display all parameters")
-    parser.add_argument('-i', '--info', default='0', help="Display parameter N" )
+    parser.add_argument('-i', '--info', help="Display parameter N" )
     parser.add_argument('-p', '--port', default=str(DEFAULT_CFG['portname']), help='Default: ' + str(DEFAULT_CFG['portname']) )
     parser.add_argument('-b', '--baudrate', default=str(DEFAULT_CFG['baudrate']), help='Default: ' + str(DEFAULT_CFG['baudrate']) )
     parser.add_argument('-s', '--slaveaddress', default=str(DEFAULT_CFG['slaveaddress']), help='Default: ' + str(DEFAULT_CFG['slaveaddress']) )
