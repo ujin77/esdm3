@@ -10,9 +10,11 @@ import threading
 import logging
 import logging.handlers
 import time
+import os, sys
 
 CONS_FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 SYSLOG_FORMAT = "%(levelname)s:%(name)s:%(message)s"
+PROG=os.path.basename(sys.argv[0]).rstrip('.py')
 
 class CDaemon(object):
     """docstring for CDaemon"""
@@ -29,9 +31,12 @@ class CDaemon(object):
             handler.setFormatter(logging.Formatter(SYSLOG_FORMAT))
             # logger.setLevel(loglevel)
             logger.addHandler(handler)
-        self.log = logging.getLogger(self._conf('name'))
+        if self.get_cfg('name'):
+            self.log = logging.getLogger(self.get_cfg('name'))
+        else:
+            self.log = logging.getLogger(PROG)
 
-    def _conf(self, arg=None):
+    def get_cfg(self, arg=None):
         if self.__conf:
             if self.__conf.get(arg):
                 return self.__conf[arg] 
