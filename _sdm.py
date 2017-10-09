@@ -2,9 +2,18 @@
 # -*- coding: utf-8
 #
 #sudo pip install minimalmodbus
+import pkgutil
+import argparse, os, sys
+
+def chk_module(name, desc=None):
+    if not pkgutil.find_loader(name):
+        print 'Please install module [' + name + ']'
+        print 'sudo pip install module ' + name
+        sys.exit()
+
+chk_module('minimalmodbus')
 
 import minimalmodbus
-import argparse, os, sys
 
 PROG=os.path.basename(sys.argv[0]).rstrip('.py')
 PROG_DESC='Eastron SDM230 reader'
