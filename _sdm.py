@@ -40,20 +40,6 @@ class sdm(minimalmodbus.Instrument):
 # instrument.address     # this is the slave address number
 # instrument.mode = minimalmodbus.MODE_RTU   # rtu or ascii mode
 
-regs = [
-# Symbol Reg# Format
-( 'V:', 0x00, '%6.2f' ), # Voltage [V]
-( 'Curr:', 0x06, '%6.2f' ), # Current [A]
-( 'Pact:', 0x0c, '%6.0f' ), # Active Power («Wirkleistung») [W]
-( 'Papp:', 0x12, '%6.0f' ), # Apparent Power («Scheinl.») [W]
-( 'Prea:', 0x18, '%6.0f' ), # Reactive Power («Blindl.») [W]
-( 'PF:', 0x1e, '%6.3f' ), # Power Factor [1]
-( 'Phi:', 0x24, '%6.1f' ), # cos(Phi)? [1]
-( 'Freq:', 0x46, '%6.2f' ), # Line Frequency [Hz]
-( 'Wact:', 0x0156, '%6.2f' ), # Energy [kWh]
-( 'Wrea:', 0x0158, '%6.2f' ), # Energy react [kvarh]
-]
-
 regs230 = [
 # Name Reg Format Symbol
 ('Line to neutral volts:',                   0x00,   '%6.2f', 'Volts'),
@@ -82,8 +68,6 @@ regs230 = [
 ('Current resettable total reactive energy:',0x182,  '%6.2f', 'kvarh'),
 ]
 
-
-
 def fmt_or_dummy(regfmt, val):
     if val is None:
         return '.'*len(regfmt[2]%(0))
@@ -94,25 +78,27 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=PROG_DESC)
     parser.add_argument('-a', '--all', action='store_true', help="Display all parameters")
     parser.add_argument('-i', '--info', help="Display parameter N" )
-    parser.add_argument('-p', '--port', default=str(DEFAULT_CFG['portname']), help='Default: ' + str(DEFAULT_CFG['portname']) )
-    parser.add_argument('-b', '--baudrate', default=str(DEFAULT_CFG['baudrate']), help='Default: ' + str(DEFAULT_CFG['baudrate']) )
-    parser.add_argument('-s', '--slaveaddress', default=str(DEFAULT_CFG['slaveaddress']), help='Default: ' + str(DEFAULT_CFG['slaveaddress']) )
+    parser.add_argument('-p', '--port', help='Default: ' + str(DEFAULT_CFG['portname']) )
+    parser.add_argument('-b', '--baudrate', help='Default: ' + str(DEFAULT_CFG['baudrate']) )
+    parser.add_argument('-s', '--slaveaddress', help='Default: ' + str(DEFAULT_CFG['slaveaddress']) )
     
     args = parser.parse_args()
 
-    DEFAULT_CFG['portname']=args.port
-    DEFAULT_CFG['baudrate']=int(args.baudrate)
-    DEFAULT_CFG['slaveaddress']=int(args.slaveaddress)
+    if args.port:         DEFAULT_CFG['portname']=args.port
+    if args.baudrate:     DEFAULT_CFG['baudrate']=int(args.baudrate)
+    if args.slaveaddress: DEFAULT_CFG['slaveaddress']=int(args.slaveaddress)
 
+    i=0
     # print DEFAULT_CFG
     if args.all:
-        sdm=sdm()
+        sdm=sdm(DEFAULT_CFG)
         for reg in regs230:
-            print reg[0], reg[2]%(sdm.read_float(reg[1], 4)), reg[3]
+            print '%2i'%i, '%42s'%reg[0], reg[2]%(sdm.read_float(reg[1], 4)), reg[3]
+            i=i+1
     elif args.info:
-        sdm=sdm()
+        sdm=sdm(DEFAULT_CFG)
         reg = regs230[int(args.info)]
-        print reg[0], reg[2]%(sdm.read_float(reg[1], 4)), reg[3]
+        print int(args.info), reg[0], reg[2]%(sdm.read_float(reg[1], 4)), reg[3]
     else:
         parser.print_help()
 
