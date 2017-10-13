@@ -2,3 +2,5 @@
 *.config
 *.conf
 *.pyc
+*.tmp
+*.old
