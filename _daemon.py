@@ -15,6 +15,7 @@ import os, sys
 CONS_FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 SYSLOG_FORMAT = "%(levelname)s:%(name)s:%(message)s"
 PROG=os.path.basename(sys.argv[0]).rstrip('.py')
+RUN_INTERVAL = 5
 
 class CDaemon(object):
     """docstring for CDaemon"""
@@ -60,7 +61,7 @@ class CDaemon(object):
         self._setLog()
         self.log.info("Start thread")
         self.on_start()
-        while not self.exit_flag.wait(timeout=1):
+        while not self.exit_flag.wait(timeout=RUN_INTERVAL):
             self.on_run()
         self.on_stop()
         self.log.info("Exit thread")
@@ -68,6 +69,9 @@ class CDaemon(object):
     def close(self):
         self.on_close()
         self._stop()
+
+    def is_exit(self):
+        self.exit_flag.is_set()
 
     def on_start(self):
         pass
@@ -83,3 +87,4 @@ class CDaemon(object):
 
     def on_close(self):
         pass
+

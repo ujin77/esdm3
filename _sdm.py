@@ -3,85 +3,106 @@
 #
 #sudo pip install minimalmodbus
 import pkgutil
-import argparse, os, sys
+import argparse, os, sys, json
 
-def chk_module(name, desc=None):
-    if not pkgutil.find_loader(name):
-        print 'Please install module [' + name + ']'
-        print 'sudo pip install module ' + name
-        sys.exit()
+def chk_module(names, desc=None):
+    for name in names:
+        if not pkgutil.find_loader(name):
+            print 'Please install module [' + name + ']'
+            print 'sudo pip install module ' + name
+            sys.exit()
 
-chk_module('minimalmodbus')
+chk_module(['minimalmodbus'])
 
 import minimalmodbus
 
 PROG=os.path.basename(sys.argv[0]).rstrip('.py')
 PROG_DESC='Eastron SDM230 reader'
 
+_REG    = 0
+_NAME   = 1
+_DESC   = 2
+_FMT    = 3
+_SYMBOL = 4
+_TIME   = 5
+
+SDM230 = [
+# Reg Name Description Format Symbol
+(0x00, 'V',     'Line to neutral volts:',                    '6.2f', 'Volts',    5),
+(0x06, 'C',     'Current:',                                  '6.2f', 'Amps',     5),
+(0x0c, 'AP',    'Active power:',                             '6.0f', 'Watts',    5),
+(0x12, 'APP',   'Apparent power:',                           '6.0f', 'VoltAmps', 5),
+(0x18, 'RP',    'Reactive power:',                           '6.0f', 'VAr',      5),
+(0x1e, 'PF',    'Power factor:',                             '6.3f', '',         5),
+(0x24, 'PH',    'Phase angle:',                              '6.1f', 'Degree',   5),
+(0x46, 'F',     'Frequency:',                                '6.2f', 'Hz',       5),
+(0x48, 'IAE',   'Import active energy:',                     '6.2f', 'kwh',    300),
+(0x4a, 'EAE',   'Export active energy:',                     '6.2f', 'kwh',    300),
+(0x4c, 'IRE',   'Import reactive energy:',                   '6.2f', 'kvarh',  300),
+(0x4e, 'ERE',   'Export reactive energy:',                   '6.2f', 'kvarh',  300),
+(0x54, 'TSPD',  'Total system power demand:',                '6.2f', 'W',      300),
+(0x56, 'MTSPD', 'Maximum total system power demand:',        '6.2f', 'W',      300),
+(0x58, 'CSPPD', 'Current system positive power demand:',     '6.2f', 'W',      300),
+(0x5a, 'MSPPD', 'Maximum system positive power demand:',     '6.2f', 'W',      300),
+(0x5c, 'CSRPD', 'Current system reverse power demand:',      '6.2f', 'W',      300),
+(0x5e, 'MSRPD', 'Maximum system reverse power demand:',      '6.2f', 'W',      300),
+(0x102, 'CD',   'Current demand:',                           '6.2f', 'Amps',   300),
+(0x108, 'MCD',  'Maximum current demand:',                   '6.2f', 'Amps',   300),
+(0x156, 'TAE',  'Total active energy:',                      '6.2f', 'kwh',    300),
+(0x158, 'TRE',  'Total reactive energy:',                    '6.2f', 'kvarh',  300),
+(0x180, 'CRTAE','Current resettable total active energy:',   '6.2f', 'kwh',    300),
+(0x182, 'CRTRE','Current resettable total reactive energy:', '6.2f', 'kvarh',  300)
+]
+
 DEFAULT_CFG = {
     'portname':'/dev/ttyUSB0',
     'baudrate':9600,
     'timeout':0.5,
-    'slaveaddress':1
+    'slaveaddress':1,
+    'dev': SDM230
 }
+
+def _dump(val):
+    print json.dumps(val, indent=2)
 
 class sdm(minimalmodbus.Instrument):
     """docstring for sdm"""
     def __init__(self, arg=None):
         self.__conf = arg if arg else DEFAULT_CFG 
         minimalmodbus.Instrument.__init__(self, self.get_cfg('portname'), self.get_cfg('slaveaddress'))
-        if self.get_cfg('baudrate'): self.serial.baudrate = self.get_cfg('baudrate') 
-        if self.get_cfg('timeout'): self.serial.timeout = self.get_cfg('timeout')
+        self.serial.baudrate = self.get_cfg('baudrate') 
+        self.serial.timeout = self.get_cfg('timeout')
         
     def get_cfg(self, arg=None):
-        if self.__conf:
-            if self.__conf.get(arg):
-                return self.__conf[arg] 
+        if self.__conf.get(arg):
+            return self.__conf[arg]
+        else:
+            if DEFAULT_CFG.get(arg):
+                return DEFAULT_CFG[arg]
         return None
 
-# instrument.serial.port          # this is the serial port name
-# instrument.serial.baudrate = 19200   # Baud
-# instrument.serial.bytesize = 8
-# instrument.serial.parity   = serial.PARITY_NONE
-# instrument.serial.stopbits = 1
-# instrument.serial.timeout  = 0.05   # seconds
+    def get(self, nparam=0):
+        res = 0
+        try:
+            res=self.read_float(SDM230[nparam][_REG], 4)
+        except Exception as e:
+            raise e
+        return(res)
 
-# instrument.address     # this is the slave address number
-# instrument.mode = minimalmodbus.MODE_RTU   # rtu or ascii mode
+    def get_str(self, nparam=0, sfmt = False):
+        reg=SDM230[nparam]
+        if sfmt:
+            fmt = '[{0}] {1} {2:' + reg[_FMT] + '} {3}'
+        else:
+            fmt = '{0:2} {1:>42} {2:' + reg[_FMT] + '} {3}'
+        # print fmt
+        return( fmt.format( nparam, reg[_DESC], self.get(nparam), reg[_SYMBOL]))
 
-regs230 = [
-# Name Reg Format Symbol
-('Line to neutral volts:',                   0x00,   '%6.2f', 'Volts'),
-('Current:',                                 0x06,   '%6.2f', 'Amps'),
-('Active power:',                            0x0c,   '%6.0f', 'Watts'),
-('Apparent power:',                          0x12,   '%6.0f', 'VoltAmps'),
-('Reactive power:',                          0x18,   '%6.0f', 'VAr'),
-('Power factor:',                            0x1e,   '%6.3f', ''),
-('Phase angle:',                             0x24,   '%6.1f', 'Degree'),
-('Frequency:',                               0x46,   '%6.2f', 'Hz'),
-('Import active energy:',                    0x48,   '%6.2f', 'kwh'),
-('Export active energy:',                    0x4a,   '%6.2f', 'kwh'),
-('Import reactive energy:',                  0x4c,   '%6.2f', 'kvarh'),
-('Export reactive energy:',                  0x4e,   '%6.2f', 'kvarh'),
-('Total system power demand:',               0x54,   '%6.2f', 'W'),
-('Maximum total system power demand:',       0x56,   '%6.2f', 'W'),
-('Current system positive power demand:',    0x58,   '%6.2f', 'W'),
-('Maximum system positive power demand:',    0x5a,   '%6.2f', 'W'),
-('Current system reverse power demand:',     0x5c,   '%6.2f', 'W'),
-('Maximum system reverse power demand:',     0x5e,   '%6.2f', 'W'),
-('Current demand:',                          0x102,  '%6.2f', 'Amps'),
-('Maximum current demand:',                  0x108,  '%6.2f', 'Amps'),
-('Total active energy:',                     0x156,  '%6.2f', 'kwh'),
-('Total reactive energy:',                   0x158,  '%6.2f', 'kvarh'),
-('Current resettable total active energy:',  0x180,  '%6.2f', 'kwh'),
-('Current resettable total reactive energy:',0x182,  '%6.2f', 'kvarh'),
-]
+    def get_data(self, nparam=0):
+        return( SDM230[nparam][_NAME], self.get(nparam))
 
-def fmt_or_dummy(regfmt, val):
-    if val is None:
-        return '.'*len(regfmt[2]%(0))
-    return regfmt[2]%(val)
-
+    def close(self):
+        self.serial.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=PROG_DESC)
@@ -97,32 +118,18 @@ if __name__ == "__main__":
     if args.baudrate:     DEFAULT_CFG['baudrate']=int(args.baudrate)
     if args.slaveaddress: DEFAULT_CFG['slaveaddress']=int(args.slaveaddress)
 
-    i=0
-    # print DEFAULT_CFG
     if args.all:
         sdm=sdm(DEFAULT_CFG)
-        for reg in regs230:
-            print '%2i'%i, '%42s'%reg[0], reg[2]%(sdm.read_float(reg[1], 4)), reg[3]
+        i=0
+        for reg in SDM230:
+            print sdm.get_str(i)
             i=i+1
     elif args.info:
         sdm=sdm(DEFAULT_CFG)
-        reg = regs230[int(args.info)]
-        print int(args.info), reg[0], reg[2]%(sdm.read_float(reg[1], 4)), reg[3]
+        reg = SDM230[int(args.info)]
+        print sdm.get_str(sfmt=True)
     else:
         parser.print_help()
-
-    # sdm=sdm()
-    # instrument = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
-    # instrument.serial.baudrate = 2400
-    # instrument.serial.timeout = 0.5
-    # instrument.debug = True
-    # print instrument.serial.baudrate
-    # print instrument.read_float(0, 4)
-    # for reg in regs:
-    #     print reg[0], sdm.read_float(reg[1], 4)
-
-    # values = [ sdm.read_float(reg[1], 4) for reg in regs ]
-    # print values
-    # outvals = list((' '.join([fmt_or_dummy(*t) for t in zip(regs, values)])).split())
-    # print outvals
-
+        _dump(DEFAULT_CFG['dev'])
+        for (x) in DEFAULT_CFG['dev']:
+            print x[_REG]
