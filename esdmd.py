@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 #
+#sudo pip install py-zabbix
 #sudo pip install python-daemon
 #sudo pip install lockfile
 ##sudo pip install kafka-python
@@ -35,6 +36,8 @@ DEFAULT_CONFIG={
     'name':PROG
 }
 
+DEMAND_TIME = 300
+
 def namedtuple_asdict(t):
     return({str(type(t).__name__) : dict(t._asdict())})
 
@@ -43,11 +46,12 @@ class ESDM(CDaemon):
     
     zabbix = None
     thingsboard = None
-    thingsboard_payload = {}
+    data_payload = {}
 
     def on_start(self):
         self._time = time.time()
         self._sdm = sdm()
+        self._time=time.time()-DEMAND_TIME
         if self.get_cfg('zabbix'):
             zb = self.get_cfg('zabbix')
             self.zabbix = zb.get('host')
@@ -62,59 +66,65 @@ class ESDM(CDaemon):
             self.log.info('send messages to thingsboard: ' + self.thingsboard)
 
     def on_run(self):
-        for x in xrange(0,7):
+        for x in xrange(0,8):
+            data = None
             if self.is_exit():
                 return
             try:
-                self.send_data(self._sdm.get_data(x))
+                data = self._sdm.get_data(x)
+                self.data_payload[data[0]]=round(data[1],3)
             except Exception as err:
-                self.log.error(err)
-        if time.time() - self._time > 300:
+                self.log.error("Get sdm data[" + str(x) + "]: " + str(err))
+                return
+        if time.time() - self._time > DEMAND_TIME:
             self._time=time.time()
-            for x in xrange(8,23):
+            for x in xrange(8,24):
+                data = None
                 if self.is_exit():
                     return
                 try:
-                    self.send_data(self._sdm.get_data(x))
+                    data = self._sdm.get_data(x)
+                    self.data_payload[data[0]]=round(data[1],3)
                 except Exception as err:
-                    self.log.error(err)
-        self.pull_thingsboard()
+                    self.log.error("Get sdm data[" + str(x) + "]: " + str(err))
+                    return
+        self.push_data()
     
-    def send_data(self, data):
-        if self.zabbix:
-            self.send_zabbix(data[0],data[1])
-        if self.thingsboard:
-            self.send_thingsboard(data[0],data[1])
-
     def on_stop(self):
         self._sdm.close()
 
-    def send_zabbix(self, key, val):
+    def send_zabbix(self):
         # self.log.debug("Send to zabbix " + z_key + "="+ z_val)
+        metrics = []
+        for (key, val) in self.data_payload.items():
+            metrics.append(ZabbixMetric(self.zabbix_name, key, val))
         try:
-            result = ZabbixSender(self.zabbix).send([ZabbixMetric(self.zabbix_name, key, val)])
+            result = ZabbixSender(self.zabbix).send(metrics)
             # if result._failed != 0:
             #     print "Send to zabbix error", z_host, z_key, z_val
                 # self.log.error("Send to zabbix error")
         except Exception as err:
-            self.log.error(err)
+            self.log.error('Publish zabbix: ' + str(err))
 
-    def send_thingsboard(self, key, val):
-        self.thingsboard_payload[key]=val
+    def send_thingsboard(self):
+        try:
+            mqtt_publish.single(
+                self.thingsboard_telemetry,
+                payload=json.dumps(self.data_payload),
+                hostname=self.thingsboard,
+                auth={'username':self.thingsboard_accesstoken, 'password':""}
+            )
+        except Exception as err:
+            self.log.error('Publish thingsboard: ' + str(err))
 
-    def pull_thingsboard(self):
+
+    def push_data(self):
+        # print json.dumps(self.data_payload)
         if self.thingsboard:
-            payload = json.dumps(self.thingsboard_payload)
-            try:
-                mqtt_publish.single(
-                    self.thingsboard_telemetry,
-                    payload=payload,
-                    hostname=self.thingsboard,
-                    auth={'username':self.thingsboard_accesstoken, 'password':""}
-                )
-                self.thingsboard_payload = {}
-            except Exception as err:
-                self.log.error(err)
+            self.send_thingsboard()
+        if self.zabbix:
+            self.send_zabbix()
+        self.data_payload = {}
 
 def run_program(foreground=False):
     if foreground:

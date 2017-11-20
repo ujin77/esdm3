@@ -126,10 +126,9 @@ if __name__ == "__main__":
             i=i+1
     elif args.info:
         sdm=sdm(DEFAULT_CFG)
-        reg = SDM230[int(args.info)]
-        print sdm.get_str(sfmt=True)
+        print sdm.get_str(nparam=int(args.info), sfmt=True)
     else:
         parser.print_help()
-        _dump(DEFAULT_CFG['dev'])
-        for (x) in DEFAULT_CFG['dev']:
-            print x[_REG]
+        # _dump(DEFAULT_CFG['dev'])
+        # for (x) in DEFAULT_CFG['dev']:
+        #     print x[_REG]
