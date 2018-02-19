@@ -15,7 +15,7 @@ import os, sys
 CONS_FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 SYSLOG_FORMAT = "%(levelname)s:%(name)s:%(message)s"
 PROG=os.path.basename(sys.argv[0]).rstrip('.py')
-RUN_INTERVAL = 5
+RUN_INTERVAL = 10
 
 class CDaemon(object):
     """docstring for CDaemon"""
