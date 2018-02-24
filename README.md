@@ -8,7 +8,9 @@
 
 ### SDM230 attributes
 
-register
+|reg|atttr|description|units|
+|---|-----|-----------|-----|
+
 (0x00, 'V',     'Line to neutral volts:',                    '6.2f', 'Volts',    5),
 (0x06, 'C',     'Current:',                                  '6.2f', 'Amps',     5),
 (0x0c, 'AP',    'Active power:',                             '6.0f', 'Watts',    5),
