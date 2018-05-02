@@ -16,6 +16,7 @@ CONS_FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 SYSLOG_FORMAT = "%(levelname)s:%(name)s:%(message)s"
 PROG=os.path.basename(sys.argv[0]).rstrip('.py')
 RUN_INTERVAL = 10
+DEV_LOG='/dev/log'
 
 class CDaemon(object):
     """docstring for CDaemon"""
@@ -28,8 +29,8 @@ class CDaemon(object):
     def _setLog(self):
         logger = logging.getLogger()
         if not logger.handlers:
-            if os.path.isfile('/dev/log') or os.path.islink('/dev/log'):
-                handler = logging.handlers.SysLogHandler(address = '/dev/log')
+            if os.path.isfile(DEV_LOG) or os.path.islink(DEV_LOG):
+                handler = logging.handlers.SysLogHandler(address=DEV_LOG)
             else:
                 handler = logging.handlers.SysLogHandler()
             handler.setFormatter(logging.Formatter(SYSLOG_FORMAT))
