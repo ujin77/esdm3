@@ -4,3 +4,5 @@
 *.pyc
 *.tmp
 *.old
+.idea/
+venv/

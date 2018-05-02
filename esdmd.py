@@ -1,9 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 #
-#sudo pip install py-zabbix
 #sudo pip install python-daemon
 #sudo pip install lockfile
+#sudo pip install module minimalmodbus
+#sudo pip install py-zabbix
+#sudo pip install paho-mqtt
 ##sudo pip install kafka-python
 
 import daemon, signal
@@ -13,6 +15,8 @@ import argparse
 import logging
 import logging.handlers
 import os, sys, time, json
+# import time
+
 import threading
 
 from _daemon import CDaemon
@@ -23,7 +27,6 @@ import ConfigParser
 # from kafka.errors import KafkaError
 from pyzabbix import ZabbixMetric, ZabbixSender
 import paho.mqtt.publish as mqtt_publish
-
 
 
 PROG=os.path.basename(sys.argv[0]).rstrip('.py')
@@ -47,10 +50,16 @@ class ESDM(CDaemon):
     zabbix = None
     thingsboard = None
     data_payload = {}
+    _sdm = None
+    _startTime = time.time()
 
     def on_start(self):
         self._time = time.time()
-        self._sdm = sdm()
+        try:
+            self._sdm = sdm()
+        except Exception as err:
+            self.log.error("Init: " + str(err))
+            # self.exit_flag.set()
         self._time=time.time()-DEMAND_TIME
         if self.get_cfg('zabbix'):
             zb = self.get_cfg('zabbix')
@@ -66,19 +75,9 @@ class ESDM(CDaemon):
             self.log.info('send messages to thingsboard: ' + self.thingsboard)
 
     def on_run(self):
-        for x in xrange(0,8):
-            data = None
-            if self.is_exit():
-                return
-            try:
-                data = self._sdm.get_data(x)
-                self.data_payload[data[0]]=round(data[1],3)
-            except Exception as err:
-                self.log.error("Get sdm data[" + str(x) + "]: " + str(err))
-                return
-        if time.time() - self._time > DEMAND_TIME:
-            self._time=time.time()
-            for x in xrange(8,24):
+        self.heartbeat()
+        if self._sdm:
+            for x in xrange(0,8):
                 data = None
                 if self.is_exit():
                     return
@@ -88,10 +87,36 @@ class ESDM(CDaemon):
                 except Exception as err:
                     self.log.error("Get sdm data[" + str(x) + "]: " + str(err))
                     return
+            if time.time() - self._time > DEMAND_TIME:
+                self._time=time.time()
+                for x in xrange(8,24):
+                    data = None
+                    if self.is_exit():
+                        return
+                    try:
+                        data = self._sdm.get_data(x)
+                        self.data_payload[data[0]]=round(data[1],3)
+                    except Exception as err:
+                        self.log.error("Get sdm data[" + str(x) + "]: " + str(err))
+                        return
         self.push_data()
     
     def on_stop(self):
-        self._sdm.close()
+        try:
+            self._sdm.close()
+        except:
+            pass
+
+    def uptime(self):
+        # return time.time() - self._startTime
+        return int(time.time() - self._startTime)
+
+    def system_time(self):
+        return int(time.time())
+
+    def heartbeat(self):
+        self.data_payload['uptime']=self.uptime()
+        # self.data_payload['localtime']=self.system_time()
 
     def send_zabbix(self):
         # self.log.debug("Send to zabbix " + z_key + "="+ z_val)
@@ -213,6 +238,8 @@ if __name__ == "__main__":
     if args.config: load_config(args.config)
 
     if args.verbose: print 'CONFIG:', json.dumps(DEFAULT_CONFIG, indent=2)
+
+    time.sleep(.5)
 
     if args.start:
         start_daemon(pidf=args.pid_file, logf=args.log_err )

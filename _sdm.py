@@ -68,11 +68,14 @@ def _dump(val):
 class sdm(minimalmodbus.Instrument):
     """docstring for sdm"""
     def __init__(self, arg=None):
-        self.__conf = arg if arg else DEFAULT_CFG 
-        minimalmodbus.Instrument.__init__(self, self.get_cfg('portname'), self.get_cfg('slaveaddress'))
-        self.serial.baudrate = self.get_cfg('baudrate') 
+        self.__conf = arg if arg else DEFAULT_CFG
+        try:
+            minimalmodbus.Instrument.__init__(self, self.get_cfg('portname'), self.get_cfg('slaveaddress'))
+        except Exception as err:
+            raise err
+        self.serial.baudrate = self.get_cfg('baudrate')
         self.serial.timeout = self.get_cfg('timeout')
-        
+
     def get_cfg(self, arg=None):
         if self.__conf.get(arg):
             return self.__conf[arg]
@@ -102,7 +105,10 @@ class sdm(minimalmodbus.Instrument):
         return( SDM230[nparam][_NAME], self.get(nparam))
 
     def close(self):
-        self.serial.close()
+        try:
+            self.serial.close()
+        except:
+            pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=PROG_DESC)
