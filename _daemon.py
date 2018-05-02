@@ -28,7 +28,10 @@ class CDaemon(object):
     def _setLog(self):
         logger = logging.getLogger()
         if not logger.handlers:
-            handler = logging.handlers.SysLogHandler()
+            if os.path.isfile('/dev/log') or os.path.islink('/dev/log'):
+                handler = logging.handlers.SysLogHandler(address = '/dev/log')
+            else:
+                handler = logging.handlers.SysLogHandler()
             handler.setFormatter(logging.Formatter(SYSLOG_FORMAT))
             # logger.setLevel(loglevel)
             logger.addHandler(handler)

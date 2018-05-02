@@ -154,7 +154,6 @@ class ESDM(CDaemon):
 def run_program(foreground=False):
     if foreground:
         print "Start", PROG
-    # esdm = cESDM(DEFAULT_CONFIG)
     esdm = ESDM(DEFAULT_CONFIG)
     try:
         while True:
