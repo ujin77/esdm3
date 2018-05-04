@@ -15,7 +15,7 @@ import argparse
 import logging
 import logging.handlers
 import os, sys, time, json
-# import time
+from _timer import CTimer
 
 import threading
 
@@ -35,11 +35,7 @@ PROG_DESC='ESDM daemon'
 CONS_FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 SYSLOG_FORMAT = "%(levelname)s:%(name)s:%(message)s"        
 
-DEFAULT_CONFIG={
-    'name':PROG
-}
-
-DEMAND_TIME = 300
+DEFAULT_CONFIG = {'name': PROG}
 
 def namedtuple_asdict(t):
     return({str(type(t).__name__) : dict(t._asdict())})
@@ -52,15 +48,14 @@ class ESDM(CDaemon):
     data_payload = {}
     _sdm = None
     _startTime = time.time()
+    _tm = CTimer()
 
     def on_start(self):
-        self._time = time.time()
         try:
             self._sdm = sdm()
         except Exception as err:
             self.log.error("Init: " + str(err))
             # self.exit_flag.set()
-        self._time=time.time()-DEMAND_TIME
         if self.get_cfg('zabbix'):
             zb = self.get_cfg('zabbix')
             self.zabbix = zb.get('host')
@@ -73,10 +68,14 @@ class ESDM(CDaemon):
             self.thingsboard_attributes = tb.get('attributes') if tb.get('attributes') else 'v1/devices/me/attributes'
             self.thingsboard_accesstoken = tb.get('accesstoken') if tb.get('accesstoken') else ''
             self.log.info('send messages to thingsboard: ' + self.thingsboard)
+        self._tm.add('main', 10)
+        self._tm.add('demand', 300)
+        self._tm.add('uptime', 60)
+        self._startTime = time.time()
 
     def on_run(self):
-        self.heartbeat()
-        if self._sdm:
+        if self._tm.is_set('main') and self._sdm:
+            self.log.debug("Send main data")
             for x in xrange(0,8):
                 data = None
                 if self.is_exit():
@@ -87,36 +86,35 @@ class ESDM(CDaemon):
                 except Exception as err:
                     self.log.error("Get sdm data[" + str(x) + "]: " + str(err))
                     return
-            if time.time() - self._time > DEMAND_TIME:
-                self._time=time.time()
-                for x in xrange(8,24):
-                    data = None
-                    if self.is_exit():
-                        return
-                    try:
-                        data = self._sdm.get_data(x)
-                        self.data_payload[data[0]]=round(data[1],3)
-                    except Exception as err:
-                        self.log.error("Get sdm data[" + str(x) + "]: " + str(err))
-                        return
+        if self._tm.is_set('demand') and self._sdm:
+            self.log.debug("Send demand data")
+            for x in xrange(8,24):
+                data = None
+                if self.is_exit():
+                    return
+                try:
+                    data = self._sdm.get_data(x)
+                    self.data_payload[data[0]]=round(data[1],3)
+                except Exception as err:
+                    self.log.error("Get sdm data[" + str(x) + "]: " + str(err))
+                    return
+        if self._tm.is_set('uptime'):
+            self.log.debug("Send uptime")
+            self.data_payload['uptime'] = self.uptime()
         self.push_data()
     
     def on_stop(self):
+        self._tm.stop()
         try:
             self._sdm.close()
         except:
             pass
 
     def uptime(self):
-        # return time.time() - self._startTime
         return int(time.time() - self._startTime)
 
     def system_time(self):
         return int(time.time())
-
-    def heartbeat(self):
-        self.data_payload['uptime']=self.uptime()
-        # self.data_payload['localtime']=self.system_time()
 
     def send_zabbix(self):
         # self.log.debug("Send to zabbix " + z_key + "="+ z_val)
@@ -144,12 +142,14 @@ class ESDM(CDaemon):
 
 
     def push_data(self):
-        # print json.dumps(self.data_payload)
-        if self.thingsboard:
-            self.send_thingsboard()
-        if self.zabbix:
-            self.send_zabbix()
-        self.data_payload = {}
+        if len(self.data_payload):
+            # print json.dumps(self.data_payload), len(self.data_payload)
+            self.log.debug(json.dumps(self.data_payload))
+            if self.thingsboard:
+                self.send_thingsboard()
+            if self.zabbix:
+                self.send_zabbix()
+            self.data_payload = {}
 
 def run_program(foreground=False):
     if foreground:

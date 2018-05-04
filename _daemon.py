@@ -15,7 +15,7 @@ import os, sys
 CONS_FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 SYSLOG_FORMAT = "%(levelname)s:%(name)s:%(message)s"
 PROG=os.path.basename(sys.argv[0]).rstrip('.py')
-RUN_INTERVAL = 10
+RUN_INTERVAL = 0.2
 DEV_LOG='/dev/log'
 
 class CDaemon(object):
