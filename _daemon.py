@@ -1,15 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 #
-#sudo pip install python-daemon
-#sudo pip install lockfile
 
 import daemon, signal
 from daemon import pidfile
 import threading
 import logging
 import logging.handlers
-import time
 import os, sys
 
 CONS_FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"

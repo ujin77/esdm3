@@ -1,12 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 #
-#sudo pip install python-daemon
-#sudo pip install lockfile
-#sudo pip install module minimalmodbus
-#sudo pip install py-zabbix
-#sudo pip install paho-mqtt
-##sudo pip install kafka-python
 
 import daemon, signal
 from daemon import pidfile

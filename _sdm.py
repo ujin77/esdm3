@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 #
-#sudo pip install minimalmodbus
+
 import pkgutil
 import argparse, os, sys, json
 
