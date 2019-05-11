@@ -1,15 +1,31 @@
-# esdmd
+##install
+```
+sudo apt install python-pip 
+sudo pip3 install -r requirements.txt
+```
 
-## Getting Started
+##startup Systemd
+edit file esdm3.service, change path to esdm3.py
 
-### Prerequisites
+```
+sudo cp esdm3.service /lib/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable esdm3.service
+```
 
-### Installing
+***
+###To start esdm3 service
+``sudo systemctl start esdm3.service``
+###To stop esdm3 service
+``sudo systemctl stop esdm3.service``
+###To restart esdm3 service
+``sudo systemctl restart esdm3.service``
 
-### SDM230 attributes
+***
+## SDM230 attributes
 
 | reg |atttr|description                             | units  |
-|-----|-----|----------------------------------------|--------|
+|---  |---  |---                                     |---     |
 |0x00 |V    |Line to neutral volts                   |Volts   |
 |0x06 |C    |Current                                 |Amps    |
 |0x0c |AP   |Active power                            |Watts   |

@@ -3,14 +3,16 @@
 #
 
 import time
-from threading import _Timer
+from threading import Timer
 from threading import Event
 
-class RepeatTimer(_Timer):
+
+class RepeatTimer(Timer):
     def run(self):
         while not self.finished.wait(self.interval):
             self.function(*self.args, **self.kwargs)
         self.finished.set()
+
 
 class CTimer(object):
 
@@ -28,7 +30,7 @@ class CTimer(object):
         pass
 
     def stop(self):
-        for name, timer in self.timers.iteritems():
+        for name, timer in self.timers.items():
             timer.cancel()
 
     def add(self, name, interval):
@@ -36,26 +38,24 @@ class CTimer(object):
         self.timers[name] = RepeatTimer(interval, self.on_timer, args=(self.events[name],))
         self.timers[name].start()
 
-    def is_set(self,name):
+    def is_set(self, name):
         if self.events[name].is_set():
             self.events[name].clear()
             return True
         return False
 
-def test():
+
+if __name__ == "__main__":
     tm = CTimer()
-    tm.add('test1',3)
-    tm.add('test2',6)
+    tm.add('test1', 3)
+    tm.add('test2', 6)
     try:
         while True:
             if tm.is_set('test1'):
-                print 'test1',time.time()
+                print('test1',time.time())
             if tm.is_set('test2'):
-                print 'test2',time.time()
+                print('test2',time.time())
             time.sleep(.1)
     except KeyboardInterrupt:
-        print "Exit"
+        print("Exit")
     tm.stop()
-
-if __name__ == "__main__":
-    test()

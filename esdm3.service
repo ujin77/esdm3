@@ -1,0 +1,11 @@
+[Unit]
+Description=ESDM Service
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/esdm3/esdm3.py
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

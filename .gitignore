@@ -1,8 +1,12 @@
 ###
 *.config
 *.conf
+*.ini
 *.pyc
 *.tmp
 *.old
+*.log
+*.log.*
+config.py
 .idea/
 venv/
