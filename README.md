@@ -16,12 +16,15 @@ sudo systemctl enable esdm3.service
 
 ***
 ###To start esdm3 service
+
 ``sudo systemctl start esdm3.service``
 
 ###To stop esdm3 service
+
 ``sudo systemctl stop esdm3.service``
 
 ###To restart esdm3 service
+
 ``sudo systemctl restart esdm3.service``
 
 ***
