@@ -1,0 +1,19 @@
+CONFIG = {
+    'log': 'INFO',
+    'zabbix': {
+        'host': '127.0.0.1',
+        'port': '10051',
+        'name': 'SDM_TEST',
+        'log': 'INFO'
+    },
+    'thingsboard': {
+        'host': '127.0.0.1',
+        'accesstoken': '1234567890'
+    },
+    'esdm': {
+        'port': '/dev/ttyUSB0',
+        'baudrate': 9600,
+        'timeout': 0.5,
+        'slaveaddress': 1
+    }
+}
