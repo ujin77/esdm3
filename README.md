@@ -1,11 +1,11 @@
-##install
+## install
 ```
 sudo apt install python-pip 
 sudo pip3 install -r requirements.txt
 ```
 rename config.py.example to config.py and edit
 
-##startup Systemd
+## startup Systemd
 edit file esdm3.service, change path to esdm3.py
 
 ```
@@ -15,15 +15,15 @@ sudo systemctl enable esdm3.service
 ```
 
 ***
-###To start esdm3 service
+### To start esdm3 service
 
 ``sudo systemctl start esdm3.service``
 
-###To stop esdm3 service
+### To stop esdm3 service
 
 ``sudo systemctl stop esdm3.service``
 
-###To restart esdm3 service
+### To restart esdm3 service
 
 ``sudo systemctl restart esdm3.service``
 
