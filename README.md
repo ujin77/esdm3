@@ -3,6 +3,7 @@
 sudo apt install python-pip 
 sudo pip3 install -r requirements.txt
 ```
+rename config.py.example to config.py and edit
 
 ##startup Systemd
 edit file esdm3.service, change path to esdm3.py
