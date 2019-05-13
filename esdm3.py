@@ -9,6 +9,7 @@ from _timer import CTimer
 from _sdm import Esdm
 from _tb import Thingsboard
 from _zbx import Zabbix
+from _sysinfo import SysInfo
 import config
 
 # PROG = os.path.basename(sys.argv[0]).rstrip('.py')
@@ -43,6 +44,7 @@ class Esdm3(object):
         self._scheduler.add('main', 10)
         self._scheduler.add('demand', 300)
         self._scheduler.add('uptime', 60)
+        # self._scheduler.add('sysinfo', 3600)
         logging.info("started")
 
     def on_config(self):
